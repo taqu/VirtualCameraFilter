@@ -1,0 +1,96 @@
+﻿cmake_minimum_required(VERSION 3.18)
+
+set(PROJECT_NAME VCamFilter)
+project(${PROJECT_NAME} LANGUAGES CXX)
+
+set(CMAKE_CONFIGURATION_TYPES "Debug" "Release")
+
+set(PROJECT_VERSION_MAJOR 0)
+set(PROJECT_VERSION_MINOR 1)
+set(PROJECT_VERSION_PATCH 0)
+set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+function(expand_files FILES SOURCE)
+    file (GLOB SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${SOURCE})
+    set(${FILES} ${SOURCES} PARENT_SCOPE)
+endfunction(expand_files)
+
+function(expand_absolute_files FILES SOURCE)
+    file (GLOB SOURCES ${SOURCE})
+    set(${FILES} ${SOURCES} PARENT_SCOPE)
+endfunction(expand_absolute_files)
+
+set(OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${OUTPUT_DIRECTORY}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIRECTORY}")
+
+if(MSVC)
+
+    set(DEFAULT_CXX_FLAGS "/DWIN32 /D_WINDOWS /D_UNICODE /DUNICODE /W4 /WX- /nologo /fp:precise /arch:AVX /Zc:wchar_t /TP /Gd")
+
+    if("1800" VERSION_LESS MSVC_VERSION)
+        set(DEFAULT_CXX_FLAGS "${DEFAULT_CXX_FLAGS}")
+    endif()
+    if(MSVC_VERSION VERSION_LESS_EQUAL "1900")
+        set(DEFAULT_CXX_FLAGS "${DEFAULT_CXX_FLAGS} /std:c++latest")
+    else()
+        set(DEFAULT_CXX_FLAGS "${DEFAULT_CXX_FLAGS} /std:c++17")
+    endif()
+
+    set(CMAKE_CXX_FLAGS "${DEFAULT_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /Gy /GR- /GS /Gm-")
+    set(CMAKE_CXX_FLAGS_RELEASE "/MD /O2 /GL /GR- /DNDEBUG")
+
+elseif(UNIX)
+    set(DEFAULT_CXX_FLAGS "-Wall -O2 -std=c++11 -march=skylake -fno-exception")
+elseif(APPLE)
+endif()
+
+set(BASECLASSES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/baseclasses)
+
+include_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(AFTER ${BASECLASSES_DIR})
+expand_files(DS_HEADERS "${BASECLASSES_DIR}/*.h")
+expand_files(DS_SOURCES "${BASECLASSES_DIR}/*.cpp")
+
+if ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
+    set(VCAMFILTER_SAFIX "32")
+else()
+    set(VCAMFILTER_SAFIX "64")
+endif()
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/VCam.def.in" "${CMAKE_CURRENT_BINARY_DIR}/VCam.def" NEWLINE_STYLE UNIX)
+
+set(HEADERS "VCamFilter.h;VCamPipe.h")
+set(SOURCES "VCamFilter.cpp;VCamPipe.cpp;dllmain.cpp;${CMAKE_CURRENT_BINARY_DIR}/VCam.def")
+
+source_group("include" FILES ${HEADERS})
+source_group("include/baseclasses" FILES ${DS_HEADERS})
+source_group("src" FILES ${SOURCES})
+source_group("src/baseclasses" FILES ${DS_SOURCES})
+
+add_library(${PROJECT_NAME} SHARED ${HEADERS} ${SOURCES} ${DS_HEADERS} ${DS_SOURCES})
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DVCAM_DLL_EXPORT")
+
+if(MSVC)
+    target_link_libraries(${PROJECT_NAME} "winmm.lib;strmiids.lib")
+elseif(UNIX)
+elseif(APPLE)
+endif()
+
+if ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32")
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME_DEBUG "${PROJECT_NAME}32" OUTPUT_NAME_RELEASE "${PROJECT_NAME}32")
+else()
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME_DEBUG "${PROJECT_NAME}64" OUTPUT_NAME_RELEASE "${PROJECT_NAME}64")
+endif()
+
+#install(TARGETS ${PROJECT_NAME} CONFIGURATIONS Debug  RUNTIME DESTINATION ${INSTALL_DIRECTORY})
+#install(TARGETS ${PROJECT_NAME} CONFIGURATIONS Release RUNTIME DESTINATION ${INSTALL_DIRECTORY})
+#install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}> DESTINATION ${INSTALL_DIRECTORY} OPTIONAL)
+#add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/vcam_filter.cs ${INSTALL_DIRECTORY})
