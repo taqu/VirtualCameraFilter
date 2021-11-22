@@ -133,6 +133,9 @@ STDAPI RegisterFilters(BOOL bRegister)
             &CLSID_VideoInputDeviceCategory,
             NAME("VCam Virtual Cam"),
             &RegFilter2);
+        if (E_POINTER == hr) {
+            hr = S_OK;
+        }
     } else {
         hr = filterMapper2->UnregisterFilter(&CLSID_VideoInputDeviceCategory, NAME("VCam Virtual Cam"), CLSID_VCAM_VirtualCam);
     }
