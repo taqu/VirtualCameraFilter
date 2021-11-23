@@ -16,11 +16,11 @@ Can build for both x86-64 and x86 dlls, because the dll's architectures should m
 For, `Visual Studio 16 2019`,
 
 ```
-make build32 & cd build32 & cmake -G"Visual Studio 16 2019" -A Win32 ..
+mkdir build32 & cd build32 & cmake -G"Visual Studio 16 2019" -A Win32 ..
 ```
 
 ```
-make build64 & cd build64 & cmake -G"Visual Studio 16 2019" ..
+mkdir build64 & cd build64 & cmake -G"Visual Studio 16 2019" ..
 ```
 
 # Register or Unregister
